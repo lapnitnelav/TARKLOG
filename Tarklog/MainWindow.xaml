@@ -180,23 +180,25 @@
                                     <TextBlock x:Name="ServerTotalCountLabel" Text="" FontSize="13" Foreground="#666" Margin="12,2,0,0"/>
                                 </StackPanel>
                                 <TextBlock Text="" FontSize="11" Margin="0,0,0,10"/>
-                                <DataGrid x:Name="ServerStatsGrid"
-                                          AutoGenerateColumns="False"
-                                          IsReadOnly="True"
-                                          HeadersVisibility="Column"
-                                          GridLinesVisibility="Horizontal"
-                                          BorderBrush="#E0E0E0"
-                                          BorderThickness="1"
-                                          Background="White"
-                                          AlternatingRowBackground="#F9F9F9"
-                                          FontSize="13">
-                                    <DataGrid.Columns>
-                                        <DataGridTextColumn Header="Country" Binding="{Binding CountryName}" Width="*" FontWeight="Bold"/>
-                                        <DataGridTextColumn Header="City" Binding="{Binding CityCode}" Width="100"/>
-                                        <DataGridTextColumn Header="Count" Binding="{Binding Count}" Width="100"/>
-                                        <DataGridTextColumn Header="Percentage" Binding="{Binding Percentage}" SortMemberPath="PercentageValue" Width="120"/>
-                                    </DataGrid.Columns>
-                                </DataGrid>
+                                <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="450">
+                                    <DataGrid x:Name="ServerStatsGrid"
+                                              AutoGenerateColumns="False"
+                                              IsReadOnly="True"
+                                              HeadersVisibility="Column"
+                                              GridLinesVisibility="Horizontal"
+                                              BorderBrush="#E0E0E0"
+                                              BorderThickness="1"
+                                              Background="White"
+                                              AlternatingRowBackground="#F9F9F9"
+                                              FontSize="13">
+                                        <DataGrid.Columns>
+                                            <DataGridTextColumn Header="Country" Binding="{Binding CountryName}" Width="*" FontWeight="Bold"/>
+                                            <DataGridTextColumn Header="City" Binding="{Binding CityCode}" Width="100"/>
+                                            <DataGridTextColumn Header="Count" Binding="{Binding Count}" Width="100"/>
+                                            <DataGridTextColumn Header="Percentage" Binding="{Binding Percentage}" SortMemberPath="PercentageValue" Width="120"/>
+                                        </DataGrid.Columns>
+                                    </DataGrid>
+                                </ScrollViewer>
                             </StackPanel>
                         </Grid>
                     </Grid>
@@ -211,14 +213,14 @@
 
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,15">
                             <TextBlock Text="Show last:" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                            <ComboBox x:Name="TimelineDaysCombo" Width="100" SelectionChanged="TimelineDaysCombo_SelectionChanged" IsEditable="True" Text="7">
-                                <ComboBoxItem Content="5"/>
-                                <ComboBoxItem Content="7" IsSelected="True"/>
+                            <ComboBox x:Name="TimelineEntriesCombo" Width="100" SelectionChanged="TimelineEntriesCombo_SelectionChanged" IsEditable="True" Text="5">
+                                <ComboBoxItem Content="5" IsSelected="True"/>
                                 <ComboBoxItem Content="10"/>
                                 <ComboBoxItem Content="15"/>
-                                <ComboBoxItem Content="30"/>
+                                <ComboBoxItem Content="20"/>
+                                <ComboBoxItem Content="50"/>
                             </ComboBox>
-                            <TextBlock Text="days" FontWeight="Bold" VerticalAlignment="Center" Margin="10,0,15,0"/>
+                            <TextBlock Text="entries" FontWeight="Bold" VerticalAlignment="Center" Margin="10,0,15,0"/>
                             <Button Content="Apply" Padding="10,5" Background="#2196F3" Foreground="White" Click="TimelineApplyFilter_Click"/>
                         </StackPanel>
 
@@ -236,8 +238,8 @@
                             <DataGrid.Columns>
                                 <DataGridTextColumn Header="Timestamp" Binding="{Binding Timestamp}" Width="180"/>
                                 <DataGridTextColumn Header="Map" Binding="{Binding Map}" Width="150" FontWeight="Bold"/>
-                                <DataGridTextColumn Header="DC Name" Binding="{Binding DcName}" Width="120"/>
-                                <DataGridTextColumn Header="DC Code" Binding="{Binding DcCode}" Width="100"/>
+                                <DataGridTextColumn Header="Country" Binding="{Binding Country}" Width="150"/>
+                                <DataGridTextColumn Header="City" Binding="{Binding City}" Width="100"/>
                                 <DataGridTextColumn Header="Raid ID" Binding="{Binding RaidId}" Width="*"/>
                             </DataGrid.Columns>
                         </DataGrid>
@@ -258,7 +260,19 @@
                         <StackPanel Grid.Column="0" VerticalAlignment="Top">
                             <TextBlock Text="Configuration" FontSize="18" FontWeight="Bold" Margin="0,0,0,20"/>
 
-                            <TextBlock Text="Log Root Directory" FontWeight="Bold" Margin="0,0,0,8"/>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                <TextBlock Text="Tarkov Log Directory" FontWeight="Bold"/>
+                                <TextBlock Text="ℹ" FontSize="14" Foreground="#2196F3" Margin="5,0,0,0" Cursor="Help">
+                                    <TextBlock.ToolTip>
+                                        <ToolTip>
+                                            <StackPanel MaxWidth="400">
+                                                <TextBlock Text="How to find the log directory:" FontWeight="Bold" Margin="0,0,0,8"/>
+                                                <Image Source="tooltip_where_log.png" Stretch="Uniform" Margin="0,0,0,0"/>
+                                            </StackPanel>
+                                        </ToolTip>
+                                    </TextBlock.ToolTip>
+                                </TextBlock>
+                            </StackPanel>
                             <Grid Margin="0,0,0,15">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>
@@ -268,7 +282,26 @@
                                 <Button Grid.Column="1" Content="Browse" Padding="15,8" Background="#2196F3" Foreground="White" Margin="10,0,0,0" Width="90" Click="BrowseLogRoot_Click"/>
                             </Grid>
 
-                            <TextBlock Text="Log Storage Directory" FontWeight="Bold" Margin="0,0,0,8"/>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                <TextBlock Text="Log Long Term Storage Directory" FontWeight="Bold"/>
+                                <TextBlock Text="ℹ" FontSize="14" Foreground="#2196F3" Margin="5,0,0,0" Cursor="Help">
+                                    <TextBlock.ToolTip>
+                                        <ToolTip>
+                                            <StackPanel MaxWidth="350">
+                                                <TextBlock TextWrapping="Wrap" FontWeight="Bold" Margin="0,0,0,8">
+                                                    Long-term storage for old log directories
+                                                </TextBlock>
+                                                <TextBlock TextWrapping="Wrap" Margin="0,0,0,8">
+                                                    This directory stores older log folders that have been moved from the Tarkov log directory to keep it clean and improve game performance.
+                                                </TextBlock>
+                                                <TextBlock TextWrapping="Wrap" FontWeight="SemiBold">
+                                                    This can be stored anywhere, including external drives or network locations.
+                                                </TextBlock>
+                                            </StackPanel>
+                                        </ToolTip>
+                                    </TextBlock.ToolTip>
+                                </TextBlock>
+                            </StackPanel>
                             <Grid Margin="0,0,0,20">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>
@@ -282,16 +315,29 @@
 
                             <Button Content="Scan All Directories" Padding="12,10" Background="#1976D2" Foreground="White" Click="ScanAllDirectories_Click" FontSize="13" FontWeight="Bold" Margin="0,0,0,10"/>
 
-                            <Button Content="Cleanup Old Directories" Padding="12,10" Background="#F57C00" Foreground="White" Click="CleanupOldDirectories_Click" FontSize="13" FontWeight="Bold" Margin="0,0,0,20"/>
+                            <Button Content="Move logs to backup" Padding="12,10" Background="#F57C00" Foreground="White" Click="CleanupOldDirectories_Click" FontSize="13" FontWeight="Bold" Margin="0,0,0,20"/>
 
-                            <TextBlock Text="Auto-refresh Interval (seconds)" FontWeight="Bold" Margin="0,0,0,8"/>
-                            <TextBox Name="RefreshIntervalTextBox" Text="30" Padding="8" Background="#F5F5F5" BorderBrush="#DDD" Height="36" Margin="0,0,0,20"/>
-
-                            <Separator Margin="0,0,0,15"/>
-
-                            <TextBlock Text="Testing Tools" FontWeight="Bold" Margin="0,0,0,10" Foreground="#FF9800"/>
-                            <Button Content="Generate Test Logs" Padding="10,6" Background="#FF9800" Foreground="White" Click="GenerateTestLogs_Click" Margin="0,0,0,10"/>
-                            <TextBlock Name="TestStatusLabel" Text="" FontSize="11" Foreground="#666" Margin="0,0,0,15" TextWrapping="Wrap"/>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                <TextBlock Text="Auto-refresh Interval (seconds)" FontWeight="Bold"/>
+                                <TextBlock Text="ℹ" FontSize="14" Foreground="#2196F3" Margin="5,0,0,0" Cursor="Help">
+                                    <TextBlock.ToolTip>
+                                        <ToolTip>
+                                            <StackPanel MaxWidth="300">
+                                                <TextBlock TextWrapping="Wrap" FontWeight="Bold" Margin="0,0,0,8">
+                                                    Automatic Log Scanning
+                                                </TextBlock>
+                                                <TextBlock TextWrapping="Wrap" Margin="0,0,0,8">
+                                                    Set how often the app scans for new raid entries in the log directory.
+                                                </TextBlock>
+                                                <TextBlock TextWrapping="Wrap" FontWeight="SemiBold">
+                                                    Enter 0 to disable auto-refresh, or a positive number (in seconds) to enable. Default: 300 (5 minutes)
+                                                </TextBlock>
+                                            </StackPanel>
+                                        </ToolTip>
+                                    </TextBlock.ToolTip>
+                                </TextBlock>
+                            </StackPanel>
+                            <TextBox Name="RefreshIntervalTextBox" Text="300" Padding="8" Background="#F5F5F5" BorderBrush="#DDD" Height="36" Margin="0,0,0,20"/>
 
                             <Separator Margin="0,0,0,15"/>
 

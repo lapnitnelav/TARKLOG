@@ -7,8 +7,8 @@ namespace Tarklog.Models
     {
         public string? Timestamp { get; set; }
         public string? Map { get; set; }
-        public string? DcName { get; set; }
-        public string? DcCode { get; set; }
+        public string? Country { get; set; }
+        public string? City { get; set; }
         public string? RaidId { get; set; }
     }
 }

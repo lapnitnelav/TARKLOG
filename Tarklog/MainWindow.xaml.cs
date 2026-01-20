@@ -21,6 +21,7 @@ namespace Tarklog
     {
         private DatabaseManager? _dbManager;
         private const string SettingsKey = "TarlogSettings";
+        private System.Windows.Threading.DispatcherTimer? _autoRefreshTimer;
 
         // Date filter state
         private DateTime? _mapFilterStartDate = null;
@@ -43,11 +44,266 @@ namespace Tarklog
                 LoadSettings();
                 RefreshSummaryPanel();
                 RefreshAnalyticsPanel();
+                StartAutoRefreshTimer();
             }
             catch (Exception ex)
             {
                 MessageBox.Show($"Error initializing application: {ex.Message}", "Initialization Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
+        }
+
+        private void StartAutoRefreshTimer()
+        {
+            // Get the refresh interval from settings
+            int intervalSeconds = GetRefreshIntervalSeconds();
+
+            if (intervalSeconds > 0)
+            {
+                _autoRefreshTimer = new System.Windows.Threading.DispatcherTimer();
+                _autoRefreshTimer.Interval = TimeSpan.FromSeconds(intervalSeconds);
+                _autoRefreshTimer.Tick += AutoRefreshTimer_Tick;
+                _autoRefreshTimer.Start();
+                System.Diagnostics.Debug.WriteLine($"[AutoRefresh] Timer started with interval: {intervalSeconds} seconds");
+            }
+        }
+
+        private void StopAutoRefreshTimer()
+        {
+            if (_autoRefreshTimer != null)
+            {
+                _autoRefreshTimer.Stop();
+                _autoRefreshTimer.Tick -= AutoRefreshTimer_Tick;
+                _autoRefreshTimer = null;
+                System.Diagnostics.Debug.WriteLine("[AutoRefresh] Timer stopped");
+            }
+        }
+
+        private void RestartAutoRefreshTimer()
+        {
+            StopAutoRefreshTimer();
+            StartAutoRefreshTimer();
+        }
+
+        private int GetRefreshIntervalSeconds()
+        {
+            if (_dbManager != null)
+            {
+                string intervalStr = _dbManager.GetSetting("RefreshInterval", "300");
+                if (int.TryParse(intervalStr, out int interval))
+                {
+                    return interval; // Return 0 to disable, or positive value for interval
+                }
+            }
+            return 300; // Default to 300 seconds (5 minutes)
+        }
+
+        private async void AutoRefreshTimer_Tick(object? sender, EventArgs e)
+        {
+            try
+            {
+                System.Diagnostics.Debug.WriteLine($"[AutoRefresh] Timer tick at {DateTime.Now:HH:mm:ss}");
+                await ScanForNewLogEntriesAsync();
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[AutoRefresh] Error during auto-refresh: {ex.Message}");
+            }
+        }
+
+        private async System.Threading.Tasks.Task ScanForNewLogEntriesAsync()
+        {
+            await System.Threading.Tasks.Task.Run(() =>
+            {
+                try
+                {
+                    string logRootPath = "";
+
+                    // Get the log root path from settings
+                    Dispatcher.Invoke(() =>
+                    {
+                        logRootPath = LogRootTextBox.Text;
+                    });
+
+                    if (string.IsNullOrWhiteSpace(logRootPath) || !Directory.Exists(logRootPath))
+                    {
+                        System.Diagnostics.Debug.WriteLine("[AutoRefresh] Log root path not configured or doesn't exist");
+                        return;
+                    }
+
+                    System.Diagnostics.Debug.WriteLine($"[AutoRefresh] Scanning for new log entries in Log Root Directory: {logRootPath}");
+
+                    int newEntriesCount = 0;
+                    int filesProcessed = 0;
+
+                    // ONLY scan the Log Root Directory (not storage) for active/changing files
+                    // Storage directory contains archived logs that won't change
+                    var subdirectories = DirectoryScanner.GetSubdirectories(logRootPath);
+
+                    foreach (var (name, fullPath, lastModified, fileCount) in subdirectories)
+                    {
+                        // Scan each subdirectory for log files
+                        var logFiles = DirectoryScanner.ScanDirectory(fullPath);
+
+                        foreach (var file in logFiles)
+                        {
+                            if (file.FullPath == null) continue;
+
+                            // Check if this is a completely new file
+                            bool alreadyProcessed = _dbManager?.IsFileProcessed(file.FullPath) ?? false;
+
+                            if (!alreadyProcessed)
+                            {
+                                // NEW FILE: Parse and save the entire file
+                                var logItems = LogParser.ParseLogFile(file.FullPath, 0);
+
+                                if (logItems.Count > 0 && _dbManager != null)
+                                {
+                                    int logInstanceId = _dbManager.SaveLogInstance(file.FileName, file.FullPath, logItems.Count);
+
+                                    foreach (var item in logItems)
+                                    {
+                                        item.LogInstanceId = logInstanceId;
+                                    }
+
+                                    _dbManager.SaveLogItems(logInstanceId, logItems);
+                                    _dbManager.UpdateProcessedLineCount(file.FullPath, CountLogLines(file.FullPath));
+
+                                    newEntriesCount += logItems.Count;
+                                    filesProcessed++;
+
+                                    System.Diagnostics.Debug.WriteLine($"[AutoRefresh] NEW FILE: {file.FileName} - Added {logItems.Count} entries");
+                                }
+                            }
+                            else
+                            {
+                                // EXISTING FILE: Check if it has grown (new entries appended)
+                                // This handles active log files that Tarkov is currently writing to
+                                var lastProcessedCount = _dbManager?.GetLastProcessedLineCount(file.FullPath) ?? 0;
+                                int currentLineCount = CountLogLines(file.FullPath);
+
+                                if (currentLineCount > lastProcessedCount)
+                                {
+                                    // File has new lines - parse only the new ones
+                                    var newLogItems = ParseLogFileFromLine(file.FullPath, lastProcessedCount);
+
+                                    if (newLogItems.Count > 0 && _dbManager != null)
+                                    {
+                                        var logInstanceId = _dbManager.GetLogInstanceIdByPath(file.FullPath);
+
+                                        if (logInstanceId > 0)
+                                        {
+                                            foreach (var item in newLogItems)
+                                            {
+                                                item.LogInstanceId = logInstanceId;
+                                            }
+
+                                            _dbManager.SaveLogItems(logInstanceId, newLogItems);
+                                            _dbManager.UpdateProcessedLineCount(file.FullPath, currentLineCount);
+
+                                            newEntriesCount += newLogItems.Count;
+                                            filesProcessed++;
+
+                                            System.Diagnostics.Debug.WriteLine($"[AutoRefresh] UPDATED FILE: {file.FileName} - Added {newLogItems.Count} new entries (lines {lastProcessedCount + 1} to {currentLineCount})");
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    if (newEntriesCount > 0)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"[AutoRefresh] Scan complete - Added {newEntriesCount} new entries from {filesProcessed} files");
+
+                        // Refresh UI on the UI thread
+                        Dispatcher.Invoke(() =>
+                        {
+                            RefreshSummaryPanel();
+                            RefreshAnalyticsPanel();
+                        });
+                    }
+                    else
+                    {
+                        System.Diagnostics.Debug.WriteLine("[AutoRefresh] No new entries found");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[AutoRefresh] Error scanning for new entries: {ex.Message}");
+                }
+            });
+        }
+
+        /// <summary>
+        /// Counts total lines in a log file
+        /// </summary>
+        private int CountLogLines(string filePath)
+        {
+            try
+            {
+                int count = 0;
+                using (var reader = new StreamReader(filePath))
+                {
+                    while (reader.ReadLine() != null)
+                    {
+                        count++;
+                    }
+                }
+                return count;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[AutoRefresh] Error counting lines in {filePath}: {ex.Message}");
+                return 0;
+            }
+        }
+
+        /// <summary>
+        /// Parses log file starting from a specific line number
+        /// </summary>
+        private List<LogItem> ParseLogFileFromLine(string filePath, int startLine)
+        {
+            var results = new List<LogItem>();
+
+            try
+            {
+                var parser = new LogParser();
+                int currentLine = 0;
+
+                using (var reader = new StreamReader(filePath))
+                {
+                    string line;
+                    while ((line = reader.ReadLine()) != null)
+                    {
+                        currentLine++;
+
+                        // Skip lines we've already processed
+                        if (currentLine <= startLine)
+                            continue;
+
+                        try
+                        {
+                            var logItem = parser.ParseLogLine(line, 0);
+                            if (logItem != null)
+                            {
+                                results.Add(logItem);
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            System.Diagnostics.Debug.WriteLine($"[AutoRefresh] Error parsing line {currentLine}: {ex.Message}");
+                        }
+                    }
+                }
+
+                System.Diagnostics.Debug.WriteLine($"[AutoRefresh] Parsed {results.Count} new items from {Path.GetFileName(filePath)} (starting from line {startLine + 1})");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[AutoRefresh] Error reading log file {filePath}: {ex.Message}");
+            }
+
+            return results;
         }
 
         private void RefreshButton_Click(object sender, RoutedEventArgs e)
@@ -81,6 +337,13 @@ namespace Tarklog
                             string ip = reader["IpAddress"]?.ToString() ?? "Unknown";
                             string dcName = reader["DcName"]?.ToString() ?? "Unknown";
 
+                            // Parse DC name to get country and city
+                            var (countryCode, cityCode) = DcNameMapper.ParseDcName(dcName);
+                            string countryName = DcNameMapper.GetCountryName(countryCode);
+                            string serverLocation = string.IsNullOrEmpty(cityCode)
+                                ? countryName
+                                : $"{countryName}, {cityCode}";
+
                             // Parse and format the timestamp
                             string dateString = "Unknown";
                             if (reader["Timestamp"] != null && reader["Timestamp"] != DBNull.Value)
@@ -91,8 +354,8 @@ namespace Tarklog
                                 }
                             }
 
-                            // Format as: "Last raid (RaidID) on Map at Date played on DC Name (IP)"
-                            SummaryTextBlock.Text = $"Last raid ({raidId}) on {displayMapName} at {dateString} played on {dcName} ({ip})";
+                            // Format as: "Last raid (RaidID) on Map at Date played on Country, City (IP)"
+                            SummaryTextBlock.Text = $"Last raid ({raidId}) on {displayMapName} at {dateString} played on {serverLocation} ({ip})";
                         }
                         else
                         {
@@ -414,9 +677,8 @@ namespace Tarklog
         {
             try
             {
-                int days = GetTimelineDays();
+                int limit = GetTimelineLimit();
                 var timelineEntries = new List<TimelineEntry>();
-                DateTime startDate = DateTime.Now.AddDays(-days);
 
                 using (var connection = _dbManager?.GetConnection())
                 {
@@ -424,10 +686,10 @@ namespace Tarklog
                     connection.Open();
                     var command = connection.CreateCommand();
                     command.CommandText = $@"
-                        SELECT Timestamp, Map, DcName, DcCode, RaidId
+                        SELECT Timestamp, Map, DcName, RaidId
                         FROM LogItems
-                        WHERE Timestamp >= '{startDate:yyyy-MM-dd}'
-                        ORDER BY Timestamp DESC";
+                        ORDER BY Timestamp DESC
+                        LIMIT {limit}";
 
                     using (var reader = command.ExecuteReader())
                     {
@@ -436,12 +698,16 @@ namespace Tarklog
                             string rawMapName = reader["Map"]?.ToString() ?? "";
                             string displayMapName = MapNameMapper.GetDisplayName(rawMapName);
 
+                            string dcName = reader["DcName"]?.ToString() ?? "";
+                            var (countryCode, cityCode) = DcNameMapper.ParseDcName(dcName);
+                            string countryName = DcNameMapper.GetCountryName(countryCode);
+
                             timelineEntries.Add(new TimelineEntry
                             {
                                 Timestamp = reader["Timestamp"]?.ToString() ?? "N/A",
                                 Map = displayMapName,
-                                DcName = reader["DcName"]?.ToString() ?? "N/A",
-                                DcCode = reader["DcCode"]?.ToString() ?? "N/A",
+                                Country = countryName,
+                                City = cityCode,
                                 RaidId = reader["RaidId"]?.ToString() ?? "N/A"
                             });
                         }
@@ -456,17 +722,17 @@ namespace Tarklog
             }
         }
 
-        private int GetTimelineDays()
+        private int GetTimelineLimit()
         {
-            if (TimelineDaysCombo != null)
+            if (TimelineEntriesCombo != null)
             {
-                string text = TimelineDaysCombo.Text;
-                if (int.TryParse(text, out int days) && days > 0)
+                string text = TimelineEntriesCombo.Text;
+                if (int.TryParse(text, out int limit) && limit > 0)
                 {
-                    return days;
+                    return limit;
                 }
             }
-            return 7; // Default to 7 days
+            return 5; // Default to 5 entries
         }
 
         private void ClearSummaryLabels()
@@ -936,7 +1202,10 @@ namespace Tarklog
                 _dbManager.SaveSetting("LogRootDirectory", LogRootTextBox.Text);
                 _dbManager.SaveSetting("LogStorageDirectory", LogStorageTextBox.Text);
                 _dbManager.SaveSetting("RefreshInterval", RefreshIntervalTextBox.Text);
-                
+
+                // Restart auto-refresh timer with new interval
+                RestartAutoRefreshTimer();
+
                 MessageBox.Show("Settings saved successfully.", "Settings", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
@@ -950,34 +1219,6 @@ namespace Tarklog
             LoadSettings();
         }
 
-        private void GenerateTestLogs_Click(object sender, RoutedEventArgs e)
-        {
-            try
-            {
-                if (string.IsNullOrWhiteSpace(LogRootTextBox.Text))
-                {
-                    MessageBox.Show("Please select a Log Root directory first.", "Setup Required");
-                    return;
-                }
-
-                TestStatusLabel.Text = "Generating test logs...";
-                TestStatusLabel.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Colors.Orange);
-
-                TestLogGenerator.GenerateSampleLogs(LogRootTextBox.Text, fileCount: 3, entriesPerFile: 10);
-
-                TestStatusLabel.Text = "Test logs generated! Click 'Scan Root' to view them.";
-                TestStatusLabel.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Colors.Green);
-
-                System.Diagnostics.Debug.WriteLine("Test logs generated successfully");
-            }
-            catch (Exception ex)
-            {
-                TestStatusLabel.Text = $"Error: {ex.Message}";
-                TestStatusLabel.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Colors.Red);
-                MessageBox.Show($"Error generating test logs: {ex.Message}", "Generation Error");
-            }
-        }
-
         private void LoadSettings()
         {
             if (_dbManager == null) return;
@@ -985,13 +1226,13 @@ namespace Tarklog
             // Load directory paths from database
             LogRootTextBox.Text = _dbManager.GetSetting("LogRootDirectory", "");
             LogStorageTextBox.Text = _dbManager.GetSetting("LogStorageDirectory", "");
-            RefreshIntervalTextBox.Text = _dbManager.GetSetting("RefreshInterval", "30");
+            RefreshIntervalTextBox.Text = _dbManager.GetSetting("RefreshInterval", "300");
         }
 
-        private void TimelineDaysCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private void TimelineEntriesCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             // Update when dropdown selection changes (not when typing)
-            if (TimelineDaysCombo != null && TimelineDaysCombo.SelectedItem is ComboBoxItem && _dbManager != null)
+            if (TimelineEntriesCombo != null && TimelineEntriesCombo.SelectedItem is ComboBoxItem && _dbManager != null)
             {
                 LoadTimelineList();
             }

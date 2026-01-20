@@ -52,7 +52,8 @@ namespace Tarklog.Database
                     FileName TEXT NOT NULL,
                     FilePath TEXT NOT NULL UNIQUE,
                     ProcessedAt DATETIME NOT NULL,
-                    ItemCount INTEGER NOT NULL DEFAULT 0
+                    ItemCount INTEGER NOT NULL DEFAULT 0,
+                    ProcessedLineCount INTEGER NOT NULL DEFAULT 0
                 );";
 
             // Create LogItems table
@@ -97,6 +98,21 @@ namespace Tarklog.Database
 
                 command.CommandText = "CREATE INDEX IF NOT EXISTS idx_dcname ON LogItems(DcName);";
                 command.ExecuteNonQuery();
+
+                // Add ProcessedLineCount column if it doesn't exist (for existing databases)
+                try
+                {
+                    command.CommandText = "ALTER TABLE LogInstances ADD COLUMN ProcessedLineCount INTEGER NOT NULL DEFAULT 0;";
+                    command.ExecuteNonQuery();
+                }
+                catch (SqliteException ex)
+                {
+                    // Column already exists, ignore error
+                    if (!ex.Message.Contains("duplicate column"))
+                    {
+                        throw;
+                    }
+                }
             }
         }
 
@@ -336,6 +352,79 @@ namespace Tarklog.Database
             }
 
             return null;
+        }
+
+        /// <summary>
+        /// Gets the last processed line count for a file
+        /// </summary>
+        public int GetLastProcessedLineCount(string filePath)
+        {
+            try
+            {
+                using (var connection = new SqliteConnection(_connectionString))
+                {
+                    connection.Open();
+                    var command = connection.CreateCommand();
+                    command.CommandText = "SELECT ProcessedLineCount FROM LogInstances WHERE FilePath = @filePath";
+                    command.Parameters.AddWithValue("@filePath", filePath);
+
+                    var result = command.ExecuteScalar();
+                    return result != null ? Convert.ToInt32(result) : 0;
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error getting processed line count for {filePath}: {ex.Message}");
+                return 0;
+            }
+        }
+
+        /// <summary>
+        /// Updates the processed line count for a file
+        /// </summary>
+        public void UpdateProcessedLineCount(string filePath, int lineCount)
+        {
+            try
+            {
+                using (var connection = new SqliteConnection(_connectionString))
+                {
+                    connection.Open();
+                    var command = connection.CreateCommand();
+                    command.CommandText = "UPDATE LogInstances SET ProcessedLineCount = @lineCount WHERE FilePath = @filePath";
+                    command.Parameters.AddWithValue("@lineCount", lineCount);
+                    command.Parameters.AddWithValue("@filePath", filePath);
+                    command.ExecuteNonQuery();
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error updating processed line count for {filePath}: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Gets the log instance ID by file path
+        /// </summary>
+        public int GetLogInstanceIdByPath(string filePath)
+        {
+            try
+            {
+                using (var connection = new SqliteConnection(_connectionString))
+                {
+                    connection.Open();
+                    var command = connection.CreateCommand();
+                    command.CommandText = "SELECT Id FROM LogInstances WHERE FilePath = @filePath";
+                    command.Parameters.AddWithValue("@filePath", filePath);
+
+                    var result = command.ExecuteScalar();
+                    return result != null ? Convert.ToInt32(result) : 0;
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error getting log instance ID for {filePath}: {ex.Message}");
+                return 0;
+            }
         }
     }
 }
