@@ -1,0 +1,50 @@
+<Window x:Class="Tarklog.ScanProgressDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Scanning Directories" Height="280" Width="500" WindowStartupLocation="CenterOwner"
+        Background="White" WindowStyle="SingleBorderWindow" ResizeMode="NoResize"
+        Topmost="True" ShowInTaskbar="False">
+    <Border Padding="25">
+        <StackPanel VerticalAlignment="Stretch">
+            <!-- Phase Indicator -->
+            <TextBlock Name="PhaseLabel" Text="Phase 1: Scanning for log files..." FontSize="14" FontWeight="Bold" 
+                       Foreground="#2196F3" Margin="0,0,0,15"/>
+            
+            <!-- Progress Bar -->
+            <ProgressBar Name="ProgressBar" Height="24" Background="#F0F0F0" Foreground="#2196F3" Margin="0,0,0,15"/>
+            
+            <!-- Progress Text -->
+            <TextBlock Name="ProgressText" Text="Initializing..." FontSize="11" Foreground="#666" Margin="0,0,0,15"/>
+            
+            <!-- Current File/Status -->
+            <Border BorderBrush="#E0E0E0" BorderThickness="1" Padding="12" Background="#F9F9F9" Margin="0,0,0,15">
+                <StackPanel>
+                    <TextBlock Text="Current Activity:" FontSize="10" FontWeight="Bold" Foreground="#999" Margin="0,0,0,5"/>
+                    <TextBlock Name="CurrentActivityLabel" Text="Getting started..." FontSize="11" Foreground="#333" TextWrapping="Wrap" TextTrimming="CharacterEllipsis" MaxHeight="60"/>
+                </StackPanel>
+            </Border>
+            
+            <!-- Statistics -->
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                
+                <Border BorderBrush="#E0E0E0" BorderThickness="1" Padding="12" Background="#F5F5F5" Margin="0,0,10,0">
+                    <StackPanel>
+                        <TextBlock Text="Files Found:" FontSize="10" FontWeight="Bold" Foreground="#999"/>
+                        <TextBlock Name="FilesFoundLabel" Text="0" FontSize="16" FontWeight="Bold" Foreground="#2196F3"/>
+                    </StackPanel>
+                </Border>
+                
+                <Border BorderBrush="#E0E0E0" BorderThickness="1" Padding="12" Background="#F5F5F5" Margin="10,0,0,0">
+                    <StackPanel>
+                        <TextBlock Text="Items Parsed:" FontSize="10" FontWeight="Bold" Foreground="#999"/>
+                        <TextBlock Name="ItemsParsedLabel" Text="0" FontSize="16" FontWeight="Bold" Foreground="#4CAF50"/>
+                    </StackPanel>
+                </Border>
+            </Grid>
+        </StackPanel>
+    </Border>
+</Window>
