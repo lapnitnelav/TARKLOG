@@ -15,11 +15,13 @@ namespace Tarklog.Services
             // Reserve mapping
             { "RezervBase", "Reserve" },
 
-            // Factory mappings (day, night, and sandbox variants)
+            // Factory mappings (day, night)
             { "factory4_day", "Factory" },
             { "factory4_night", "Factory" },
-            { "Sandbox", "Factory" },
-            { "Sandbox_high", "Factory" },
+
+            // Ground Zero mappings
+            { "Sandbox", "Ground Zero" },
+            { "Sandbox_high", "Ground Zero" },
 
             // Labs mapping
             { "laboratory", "Labs" }
