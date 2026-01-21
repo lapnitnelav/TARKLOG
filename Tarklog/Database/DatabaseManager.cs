@@ -100,19 +100,16 @@ namespace Tarklog.Database
                 command.ExecuteNonQuery();
 
                 // Add ProcessedLineCount column if it doesn't exist (for existing databases)
-                try
+                // Check if column exists first to avoid throwing exception
+/*                 command.CommandText = "SELECT COUNT(*) FROM pragma_table_info('LogInstances') WHERE name='ProcessedLineCount';";
+                var columnExists = Convert.ToInt32(command.ExecuteScalar()) > 0;
+
+                if (!columnExists)
                 {
                     command.CommandText = "ALTER TABLE LogInstances ADD COLUMN ProcessedLineCount INTEGER NOT NULL DEFAULT 0;";
                     command.ExecuteNonQuery();
-                }
-                catch (SqliteException ex)
-                {
-                    // Column already exists, ignore error
-                    if (!ex.Message.Contains("duplicate column"))
-                    {
-                        throw;
-                    }
-                }
+                    System.Diagnostics.Debug.WriteLine("[DatabaseManager] Added ProcessedLineCount column to LogInstances table");
+                } */
             }
         }
 

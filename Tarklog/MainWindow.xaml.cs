@@ -784,82 +784,70 @@ namespace Tarklog
             return null; // All Time
         }
 
+        // Generic filter helper method
+        private void ApplyDaysFilter(string daysText, ref DateTime? startDate, ref DateTime? endDate, Action loadAction)
+        {
+            if (_dbManager == null) return;
+
+            if (daysText.Equals("All", StringComparison.OrdinalIgnoreCase))
+            {
+                startDate = null;
+                endDate = null;
+            }
+            else if (int.TryParse(daysText, out int days) && days > 0)
+            {
+                startDate = DateTime.Now.AddDays(-days);
+                endDate = null;
+            }
+            else
+            {
+                MessageBox.Show("Please enter a valid number of days or 'All'.", "Invalid Input", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            loadAction();
+        }
+
+        // Generic date range filter helper method
+        private void ApplyDateRangeFilter(DateTime? startDate, DateTime? endDate, ref DateTime? filterStartDate, ref DateTime? filterEndDate, ComboBox daysCombo, Action loadAction)
+        {
+            if (_dbManager == null) return;
+
+            filterStartDate = startDate;
+            filterEndDate = endDate;
+
+            // Clear the days combo to indicate we're using date range instead
+            daysCombo.Text = "";
+
+            loadAction();
+        }
+
         // Map Distribution Date Filter Event Handlers
-        private void MapDateFilterChanged(object sender, RoutedEventArgs e)
+        private void MapApplyFilter_Click(object sender, RoutedEventArgs e)
         {
-            // Enable/disable controls based on radio button selection
-            if (MapQuickFilterCombo != null && MapFromDatePicker != null && MapToDatePicker != null)
-            {
-                bool isQuickFilter = MapQuickFilterRadio.IsChecked == true;
-                MapQuickFilterCombo.IsEnabled = isQuickFilter;
-                MapFromDatePicker.IsEnabled = !isQuickFilter;
-                MapToDatePicker.IsEnabled = !isQuickFilter;
-            }
-        }
-
-        private void MapQuickFilterCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (MapQuickFilterCombo.SelectedItem is ComboBoxItem item && _dbManager != null)
-            {
-                string filterText = item.Content?.ToString() ?? "";
-                _mapFilterStartDate = GetQuickFilterStartDate(filterText);
-                _mapFilterEndDate = null; // Quick filters only set start date
-                LoadMapDistributionChart();
-            }
-        }
-
-        private void MapDatePickerChanged(object sender, SelectionChangedEventArgs e)
-        {
-            // Date pickers changed, but don't apply until Apply button clicked
-        }
-
-        private void MapApplyCustomFilter_Click(object sender, RoutedEventArgs e)
-        {
-            if (_dbManager != null)
-            {
-                _mapFilterStartDate = MapFromDatePicker.SelectedDate;
-                _mapFilterEndDate = MapToDatePicker.SelectedDate;
-                LoadMapDistributionChart();
-            }
+            string daysText = MapDaysCombo.Text?.Trim() ?? "All";
+            ApplyDaysFilter(daysText, ref _mapFilterStartDate, ref _mapFilterEndDate, LoadMapDistributionChart);
         }
 
         // Server Distribution Date Filter Event Handlers
-        private void ServerDateFilterChanged(object sender, RoutedEventArgs e)
+        private void ServerApplyFilter_Click(object sender, RoutedEventArgs e)
         {
-            // Enable/disable controls based on radio button selection
-            if (ServerQuickFilterCombo != null && ServerFromDatePicker != null && ServerToDatePicker != null)
-            {
-                bool isQuickFilter = ServerQuickFilterRadio.IsChecked == true;
-                ServerQuickFilterCombo.IsEnabled = isQuickFilter;
-                ServerFromDatePicker.IsEnabled = !isQuickFilter;
-                ServerToDatePicker.IsEnabled = !isQuickFilter;
-            }
+            string daysText = ServerDaysCombo.Text?.Trim() ?? "All";
+            ApplyDaysFilter(daysText, ref _serverFilterStartDate, ref _serverFilterEndDate, LoadServerDistributionChart);
         }
 
-        private void ServerQuickFilterCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        // Map Distribution Date Range Picker Handler
+        private void MapApplyDateRange_Click(object sender, RoutedEventArgs e)
         {
-            if (ServerQuickFilterCombo.SelectedItem is ComboBoxItem item && _dbManager != null)
-            {
-                string filterText = item.Content?.ToString() ?? "";
-                _serverFilterStartDate = GetQuickFilterStartDate(filterText);
-                _serverFilterEndDate = null; // Quick filters only set start date
-                LoadServerDistributionChart();
-            }
+            ApplyDateRangeFilter(MapStartDatePicker.SelectedDate, MapEndDatePicker.SelectedDate,
+                ref _mapFilterStartDate, ref _mapFilterEndDate, MapDaysCombo, LoadMapDistributionChart);
         }
 
-        private void ServerDatePickerChanged(object sender, SelectionChangedEventArgs e)
+        // Server Distribution Date Range Picker Handler
+        private void ServerApplyDateRange_Click(object sender, RoutedEventArgs e)
         {
-            // Date pickers changed, but don't apply until Apply button clicked
-        }
-
-        private void ServerApplyCustomFilter_Click(object sender, RoutedEventArgs e)
-        {
-            if (_dbManager != null)
-            {
-                _serverFilterStartDate = ServerFromDatePicker.SelectedDate;
-                _serverFilterEndDate = ServerToDatePicker.SelectedDate;
-                LoadServerDistributionChart();
-            }
+            ApplyDateRangeFilter(ServerStartDatePicker.SelectedDate, ServerEndDatePicker.SelectedDate,
+                ref _serverFilterStartDate, ref _serverFilterEndDate, ServerDaysCombo, LoadServerDistributionChart);
         }
 
         private void BrowseLogRoot_Click(object sender, RoutedEventArgs e)

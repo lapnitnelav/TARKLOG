@@ -53,29 +53,30 @@
 
                         <!-- Date Range Filter -->
                         <Border Grid.Row="0" Background="#F5F5F5" Padding="12" Margin="0,0,0,10" CornerRadius="5">
-                            <StackPanel>
-                                <TextBlock Text="Date Range Filter" FontWeight="Bold" FontSize="13" Margin="0,0,0,8"/>
-                                <StackPanel Orientation="Horizontal">
-                                    <RadioButton x:Name="MapQuickFilterRadio" Content="Quick Filter" GroupName="MapDateFilter" IsChecked="True" VerticalAlignment="Center" Margin="0,0,15,0" Checked="MapDateFilterChanged"/>
-                                    <ComboBox x:Name="MapQuickFilterCombo" Width="160" SelectionChanged="MapQuickFilterCombo_SelectionChanged">
-                                        <ComboBoxItem Content="All Time" IsSelected="True"/>
-                                        <ComboBoxItem Content="Last 7 Days"/>
-                                        <ComboBoxItem Content="Last 14 Days"/>
-                                        <ComboBoxItem Content="Last 30 Days"/>
-                                        <ComboBoxItem Content="Last 60 Days"/>
-                                        <ComboBoxItem Content="Last 90 Days"/>
-                                        <ComboBoxItem Content="Last 180 Days"/>
-                                        <ComboBoxItem Content="Last 1 Year"/>
-                                        <ComboBoxItem Content="Last 2 Years"/>
-                                    </ComboBox>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="Show last:" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                                <ComboBox x:Name="MapDaysCombo" Width="100" IsEditable="True" Text="All">
+                                    <ComboBoxItem Content="All" IsSelected="True"/>
+                                    <ComboBoxItem Content="7"/>
+                                    <ComboBoxItem Content="14"/>
+                                    <ComboBoxItem Content="30"/>
+                                    <ComboBoxItem Content="60"/>
+                                    <ComboBoxItem Content="90"/>
+                                    <ComboBoxItem Content="180"/>
+                                    <ComboBoxItem Content="365"/>
+                                </ComboBox>
+                                <TextBlock Text="days" FontWeight="Bold" VerticalAlignment="Center" Margin="10,0,15,0"/>
+                                <Button Content="Apply" Padding="10,5" Background="#2196F3" Foreground="White" Click="MapApplyFilter_Click"/>
 
-                                    <RadioButton x:Name="MapCustomFilterRadio" Content="Custom Range" GroupName="MapDateFilter" VerticalAlignment="Center" Margin="25,0,15,0" Checked="MapDateFilterChanged"/>
-                                    <TextBlock Text="From:" VerticalAlignment="Center" Margin="0,0,5,0"/>
-                                    <DatePicker x:Name="MapFromDatePicker" Width="115" Margin="0,0,8,0" SelectedDateChanged="MapDatePickerChanged"/>
-                                    <TextBlock Text="To:" VerticalAlignment="Center" Margin="0,0,5,0"/>
-                                    <DatePicker x:Name="MapToDatePicker" Width="115" Margin="0,0,8,0" SelectedDateChanged="MapDatePickerChanged"/>
-                                    <Button Content="Apply" Padding="10,5" Background="#2196F3" Foreground="White" Click="MapApplyCustomFilter_Click"/>
-                                </StackPanel>
+                                <!-- Separator -->
+                                <Border Width="1" Background="#DDD" Margin="20,0"/>
+
+                                <!-- Date Range Picker -->
+                                <TextBlock Text="Or date range:" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                                <DatePicker x:Name="MapStartDatePicker" Width="120" Margin="0,0,10,0"/>
+                                <TextBlock Text="to" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                                <DatePicker x:Name="MapEndDatePicker" Width="120" Margin="0,0,10,0"/>
+                                <Button Content="Apply" Padding="10,5" Background="#2196F3" Foreground="White" Click="MapApplyDateRange_Click"/>
                             </StackPanel>
                         </Border>
 
@@ -133,29 +134,30 @@
 
                         <!-- Date Range Filter -->
                         <Border Grid.Row="0" Background="#F5F5F5" Padding="12" Margin="0,0,0,10" CornerRadius="5">
-                            <StackPanel>
-                                <TextBlock Text="Date Range Filter" FontWeight="Bold" FontSize="13" Margin="0,0,0,8"/>
-                                <StackPanel Orientation="Horizontal">
-                                    <RadioButton x:Name="ServerQuickFilterRadio" Content="Quick Filter" GroupName="ServerDateFilter" IsChecked="True" VerticalAlignment="Center" Margin="0,0,15,0" Checked="ServerDateFilterChanged"/>
-                                    <ComboBox x:Name="ServerQuickFilterCombo" Width="160" SelectionChanged="ServerQuickFilterCombo_SelectionChanged">
-                                        <ComboBoxItem Content="All Time" IsSelected="True"/>
-                                        <ComboBoxItem Content="Last 7 Days"/>
-                                        <ComboBoxItem Content="Last 14 Days"/>
-                                        <ComboBoxItem Content="Last 30 Days"/>
-                                        <ComboBoxItem Content="Last 60 Days"/>
-                                        <ComboBoxItem Content="Last 90 Days"/>
-                                        <ComboBoxItem Content="Last 180 Days"/>
-                                        <ComboBoxItem Content="Last 1 Year"/>
-                                        <ComboBoxItem Content="Last 2 Years"/>
-                                    </ComboBox>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="Show last:" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                                <ComboBox x:Name="ServerDaysCombo" Width="100" IsEditable="True" Text="All">
+                                    <ComboBoxItem Content="All" IsSelected="True"/>
+                                    <ComboBoxItem Content="7"/>
+                                    <ComboBoxItem Content="14"/>
+                                    <ComboBoxItem Content="30"/>
+                                    <ComboBoxItem Content="60"/>
+                                    <ComboBoxItem Content="90"/>
+                                    <ComboBoxItem Content="180"/>
+                                    <ComboBoxItem Content="365"/>
+                                </ComboBox>
+                                <TextBlock Text="days" FontWeight="Bold" VerticalAlignment="Center" Margin="10,0,15,0"/>
+                                <Button Content="Apply" Padding="10,5" Background="#2196F3" Foreground="White" Click="ServerApplyFilter_Click"/>
 
-                                    <RadioButton x:Name="ServerCustomFilterRadio" Content="Custom Range" GroupName="ServerDateFilter" VerticalAlignment="Center" Margin="25,0,15,0" Checked="ServerDateFilterChanged"/>
-                                    <TextBlock Text="From:" VerticalAlignment="Center" Margin="0,0,5,0"/>
-                                    <DatePicker x:Name="ServerFromDatePicker" Width="115" Margin="0,0,8,0" SelectedDateChanged="ServerDatePickerChanged"/>
-                                    <TextBlock Text="To:" VerticalAlignment="Center" Margin="0,0,5,0"/>
-                                    <DatePicker x:Name="ServerToDatePicker" Width="115" Margin="0,0,8,0" SelectedDateChanged="ServerDatePickerChanged"/>
-                                    <Button Content="Apply" Padding="10,5" Background="#2196F3" Foreground="White" Click="ServerApplyCustomFilter_Click"/>
-                                </StackPanel>
+                                <!-- Separator -->
+                                <Border Width="1" Background="#DDD" Margin="20,0"/>
+
+                                <!-- Date Range Picker -->
+                                <TextBlock Text="Or date range:" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                                <DatePicker x:Name="ServerStartDatePicker" Width="120" Margin="0,0,10,0"/>
+                                <TextBlock Text="to" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                                <DatePicker x:Name="ServerEndDatePicker" Width="120" Margin="0,0,10,0"/>
+                                <Button Content="Apply" Padding="10,5" Background="#2196F3" Foreground="White" Click="ServerApplyDateRange_Click"/>
                             </StackPanel>
                         </Border>
 
@@ -267,7 +269,7 @@
                                         <ToolTip>
                                             <StackPanel MaxWidth="400">
                                                 <TextBlock Text="How to find the log directory:" FontWeight="Bold" Margin="0,0,0,8"/>
-                                                <Image Source="tooltip_where_log.png" Stretch="Uniform" Margin="0,0,0,0"/>
+                                                <Image Source="Data/tooltip_where_log.png" Stretch="Uniform" Margin="0,0,0,0"/>
                                             </StackPanel>
                                         </ToolTip>
                                     </TextBlock.ToolTip>
