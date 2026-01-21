@@ -183,6 +183,41 @@ Enable Debug Output in Visual Studio (if running from source):
 - ✓ Integration with raid planning tools
 - ✓ Multi-instance log comparison
 
+## Building from Source
+
+Tarklog can be built for distribution in two formats:
+- **Framework-dependent** (~2.9 MB) - Requires .NET 8.0 Desktop Runtime
+- **Self-contained** (~70-80 MB) - Includes runtime, works on any Windows machine
+
+### Quick Build
+
+Run one of the provided build scripts from the project root:
+
+**Windows Command Prompt:**
+```batch
+build.bat
+```
+
+**PowerShell:**
+```powershell
+.\build.ps1
+```
+
+Both scripts offer menu-driven options to build framework-dependent, self-contained, or both versions.
+
+### Build Output
+
+Compiled executables are created in:
+- `dist\framework-dependent\Tarklog.exe`
+- `dist\self-contained\Tarklog.exe`
+
+### Prerequisites
+
+- .NET 8.0 SDK
+- Windows OS
+
+For detailed build instructions, manual build commands, distribution packaging, and troubleshooting, see [BUILD_INSTRUCTIONS.md](BUILD_INSTRUCTIONS.md).
+
 ## Architecture
 
 ### Technology Stack
