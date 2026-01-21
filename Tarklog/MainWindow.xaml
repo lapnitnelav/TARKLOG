@@ -267,7 +267,7 @@
                                         <ToolTip>
                                             <StackPanel MaxWidth="400">
                                                 <TextBlock Text="How to find the log directory:" FontWeight="Bold" Margin="0,0,0,8"/>
-                                                <Image Source="tooltip_where_log.png" Stretch="Uniform" Margin="0,0,0,0"/>
+                                                <Image Source="Data/tooltip_where_log.png" Stretch="Uniform" Margin="0,0,0,0"/>
                                             </StackPanel>
                                         </ToolTip>
                                     </TextBlock.ToolTip>
